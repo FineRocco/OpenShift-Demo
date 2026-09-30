@@ -1,6 +1,19 @@
 pipeline {
     agent {
-        label 'maven'
+        kubernetes {
+            defaultContainer 'maven'
+            yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: maven
+    image: quay.io/openshift/origin-jenkins-agent-maven:v4.0.0
+    command:
+    - cat
+    tty: true
+'''
+        }
     }
 
     environment {
