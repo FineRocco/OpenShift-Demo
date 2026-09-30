@@ -1,0 +1,33 @@
+---
+# ==============================================================================
+# Ansible Deployment Variables - OpenShift Demo
+# ==============================================================================
+
+# Application Details
+app_name: "openshift-demo"
+openshift_project: "denis-ung-20-dev"
+image_tag: "latest"
+
+# OpenShift Cluster API Endpoint
+# Default points to Developer Sandbox or self-hosted OpenShift API endpoint
+openshift_server: "https://api.sandbox.x8i4.p1.openshiftapps.com:6443"
+
+# OpenShift User / ServiceAccount Authentication Token
+# Can be overridden via CLI: ansible-playbook deploy-playbook.yml -e "openshift_token=sha256~xxxx"
+openshift_token: ""
+
+# Path to Kubernetes / OpenShift manifests relative to playbook directory
+k8s_dir: "../k8s"
+
+# Internal OpenShift Image Registry path
+image_registry: "image-registry.openshift-image-registry.svc:5000"
+image_name: "{{ openshift_project }}/{{ app_name }}:{{ image_tag }}"
+
+# Deployment Sizing and Probes
+replicas: 2
+cpu_request: "250m"
+cpu_limit: "500m"
+memory_request: "128Mi"
+memory_limit: "256Mi"
+health_probe_port: 8080
+health_probe_path: "/actuator/health"

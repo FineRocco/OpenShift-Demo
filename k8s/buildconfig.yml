@@ -1,0 +1,23 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: openshift-demo
+  labels:
+    app: openshift-demo
+    app.kubernetes.io/name: openshift-demo
+    app.kubernetes.io/part-of: openshift-demo-app
+spec:
+  runPolicy: Serial
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  output:
+    to:
+      kind: ImageStreamTag
+      name: openshift-demo:latest
+  triggers:
+    - type: ConfigChange
+    - type: ImageChange

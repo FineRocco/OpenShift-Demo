@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openshift-demo-config
+  labels:
+    app: openshift-demo
+    app.kubernetes.io/name: openshift-demo
+    app.kubernetes.io/part-of: openshift-demo-app
+data:
+  # Spring profile properties mounted into /app/config/application-openshift.properties
+  application-openshift.properties: |
+    # ==========================================================================
+    # OpenShift Environment Profile Configuration
+    # ==========================================================================
+    server.port=8080
+    spring.application.name=openshift-demo
+
+    # Actuator Endpoints and Health Indicators
+    management.endpoints.web.exposure.include=health,info,metrics,prometheus
+    management.endpoint.health.show-details=always
+    management.endpoint.health.probes.enabled=true
+    management.health.livenessstate.enabled=true
+    management.health.readinessstate.enabled=true
+
+    # Application Custom Metadata & Logging
+    app.name=openshift-demo
+    app.environment=openshift
+    app.message=Welcome to Spring Boot running on Red Hat OpenShift Container Platform!
+
+    # Graceful shutdown configuration for container lifecycles
+    server.shutdown=graceful
+    spring.lifecycle.timeout-per-shutdown-phase=20s
+
+    # Logging levels
+    logging.level.root=INFO
+    logging.level.com.teejey.openshiftdemo=DEBUG

@@ -1,0 +1,18 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: openshift-demo
+  labels:
+    app: openshift-demo
+    app.kubernetes.io/name: openshift-demo
+    app.kubernetes.io/part-of: openshift-demo-app
+spec:
+  to:
+    kind: Service
+    name: openshift-demo
+    weight: 100
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

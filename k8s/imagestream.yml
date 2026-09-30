@@ -1,0 +1,11 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: openshift-demo
+  labels:
+    app: openshift-demo
+    app.kubernetes.io/name: openshift-demo
+    app.kubernetes.io/part-of: openshift-demo-app
+spec:
+  lookupPolicy:
+    local: true

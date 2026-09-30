@@ -1,0 +1,107 @@
+---
+# ==============================================================================
+# Ansible Playbook: Deploy OpenShift Demo to Red Hat OpenShift
+# ==============================================================================
+- name: Deploy OpenShift Demo to OpenShift
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    - vars.yml
+
+  vars:
+    app_name: "{{ app_name | default('openshift-demo') }}"
+    openshift_project: "{{ openshift_project | default('openshift-demo') }}"
+    openshift_server: "{{ openshift_server | default('https://api.sandbox.x8i4.p1.openshiftapps.com:6443') }}"
+    openshift_token: "{{ openshift_token | default('') }}"
+    image_tag: "{{ image_tag | default('latest') }}"
+    k8s_dir: "{{ k8s_dir | default('../k8s') }}"
+
+  tasks:
+    # --------------------------------------------------------------------------
+    # Task 1: OpenShift Cluster Authentication
+    # --------------------------------------------------------------------------
+    - name: 1. Login to OpenShift using oc login
+      ansible.builtin.command: >
+        oc login --server={{ openshift_server }}
+        --token={{ openshift_token }}
+        --insecure-skip-tls-verify=true
+      register: oc_login
+      changed_when: false
+      no_log: true
+      when: openshift_token | length > 0
+
+    # --------------------------------------------------------------------------
+    # Task 2: Project / Namespace Verification and Creation
+    # --------------------------------------------------------------------------
+    - name: 2. Check if OpenShift project exists
+      ansible.builtin.command: oc get project {{ openshift_project }}
+      register: project_check
+      changed_when: false
+      failed_when: false
+
+    - name: 2. Create project if not exists
+      ansible.builtin.command: oc new-project {{ openshift_project }} --display-name="{{ app_name }}"
+      when: project_check.rc != 0
+      register: project_create
+      changed_when: project_create.rc == 0
+
+    - name: 2. Switch context to project
+      ansible.builtin.command: oc project {{ openshift_project }}
+      changed_when: false
+
+    # --------------------------------------------------------------------------
+    # Task 3: Apply Kubernetes & OpenShift Manifests
+    # --------------------------------------------------------------------------
+    - name: 3. Apply Kubernetes manifests using oc apply -f k8s/
+      ansible.builtin.command: oc apply -f {{ k8s_dir }}/ -n {{ openshift_project }}
+      register: oc_apply
+      changed_when: "'created' in oc_apply.stdout or 'configured' in oc_apply.stdout"
+
+    - name: Print manifest application output
+      ansible.builtin.debug:
+        msg: "{{ oc_apply.stdout_lines }}"
+
+    # --------------------------------------------------------------------------
+    # Task 4: Wait for Deployment Rollout
+    # --------------------------------------------------------------------------
+    - name: 4. Wait for deployment rollout
+      ansible.builtin.command: >
+        oc rollout status deployment/{{ app_name }}
+        -n {{ openshift_project }}
+        --timeout=180s
+      register: rollout_result
+      changed_when: false
+
+    - name: Print rollout status
+      ansible.builtin.debug:
+        msg: "{{ rollout_result.stdout }}"
+
+    # --------------------------------------------------------------------------
+    # Task 5: Retrieve and Display Public Route URL
+    # --------------------------------------------------------------------------
+    - name: 5. Get route URL
+      ansible.builtin.command: >
+        oc get route {{ app_name }}
+        -n {{ openshift_project }}
+        -o jsonpath='{.spec.host}'
+      register: route_host
+      changed_when: false
+      retries: 6
+      delay: 5
+      until: route_host.stdout != ""
+
+    - name: 5. Display route URL and deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "================================================================="
+          - " Red Hat OpenShift Deployment Completed Successfully!"
+          - "================================================================="
+          - " Application Name : {{ app_name }}"
+          - " Target Project   : {{ openshift_project }}"
+          - " Route URL        : https://{{ route_host.stdout }}"
+          - " Health Endpoint  : https://{{ route_host.stdout }}/actuator/health"
+          - " REST Greeting    : https://{{ route_host.stdout }}/api/hello"
+          - " Info Endpoint    : https://{{ route_host.stdout }}/api/info"
+          - "================================================================="

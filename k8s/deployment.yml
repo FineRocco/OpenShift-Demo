@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openshift-demo
+  labels:
+    app: openshift-demo
+    app.kubernetes.io/name: openshift-demo
+    app.kubernetes.io/part-of: openshift-demo-app
+    app.kubernetes.io/component: backend
+    app.openshift.io/runtime: java
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: openshift-demo
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: openshift-demo
+        app.kubernetes.io/name: openshift-demo
+        app.openshift.io/runtime: java
+    spec:
+      containers:
+      - name: openshift-demo
+        image: image-registry.openshift-image-registry.svc:5000/openshift-demo/openshift-demo:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "250m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "openshift"
+        - name: SPRING_CONFIG_ADDITIONAL_LOCATION
+          value: "file:/app/config/"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+          readOnly: true
+      volumes:
+      - name: config-volume
+        configMap:
+          name: openshift-demo-config
