@@ -8,7 +8,7 @@ kind: Pod
 spec:
   containers:
   - name: maven
-    image: quay.io/openshift/origin-jenkins-agent-maven:v4.0.0
+    image: maven:3.9-eclipse-temurin-17
     command:
     - cat
     tty: true
