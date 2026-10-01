@@ -23,6 +23,8 @@ spec:
     env:
     - name: HOME
       value: /tmp
+    - name: USER
+      value: jenkins 
 '''
         }
     }
