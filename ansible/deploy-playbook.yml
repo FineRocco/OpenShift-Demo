@@ -33,28 +33,9 @@
       when: openshift_token | length > 0
 
     # --------------------------------------------------------------------------
-    # Task 2: Project / Namespace Verification and Creation
+    # Task 2: Apply Kubernetes & OpenShift Manifests
     # --------------------------------------------------------------------------
-    - name: 2. Check if OpenShift project exists
-      ansible.builtin.command: oc get project {{ openshift_project }}
-      register: project_check
-      changed_when: false
-      failed_when: false
-
-    - name: 2. Create project if not exists
-      ansible.builtin.command: oc new-project {{ openshift_project }} --display-name="{{ app_name }}"
-      when: project_check.rc != 0
-      register: project_create
-      changed_when: project_create.rc == 0
-
-    - name: 2. Switch context to project
-      ansible.builtin.command: oc project {{ openshift_project }}
-      changed_when: false
-
-    # --------------------------------------------------------------------------
-    # Task 3: Apply Kubernetes & OpenShift Manifests
-    # --------------------------------------------------------------------------
-    - name: 3. Apply Kubernetes manifests using oc apply -f k8s/
+    - name: 2. Apply Kubernetes manifests using oc apply -f k8s/
       ansible.builtin.command: oc apply -f {{ k8s_dir }}/ -n {{ openshift_project }}
       register: oc_apply
       changed_when: "'created' in oc_apply.stdout or 'configured' in oc_apply.stdout"
@@ -64,9 +45,9 @@
         msg: "{{ oc_apply.stdout_lines }}"
 
     # --------------------------------------------------------------------------
-    # Task 4: Wait for Deployment Rollout
+    # Task 3: Wait for Deployment Rollout
     # --------------------------------------------------------------------------
-    - name: 4. Wait for deployment rollout
+    - name: 3. Wait for deployment rollout
       ansible.builtin.command: >
         oc rollout status deployment/{{ app_name }}
         -n {{ openshift_project }}
@@ -79,9 +60,9 @@
         msg: "{{ rollout_result.stdout }}"
 
     # --------------------------------------------------------------------------
-    # Task 5: Retrieve and Display Public Route URL
+    # Task 4: Retrieve and Display Public Route URL
     # --------------------------------------------------------------------------
-    - name: 5. Get route URL
+    - name: 4. Get route URL
       ansible.builtin.command: >
         oc get route {{ app_name }}
         -n {{ openshift_project }}
@@ -92,7 +73,7 @@
       delay: 5
       until: route_host.stdout != ""
 
-    - name: 5. Display route URL and deployment summary
+    - name: 4. Display route URL and deployment summary
       ansible.builtin.debug:
         msg:
           - "================================================================="
