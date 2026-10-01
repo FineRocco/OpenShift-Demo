@@ -12,6 +12,9 @@ spec:
     command:
     - cat
     tty: true
+    env:
+    - name: HOME
+      value: /tmp
   - name: ansible
     image: quay.io/ansible/creator-ee:v0.14.0
     command:
