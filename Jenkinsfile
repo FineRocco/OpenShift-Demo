@@ -12,12 +12,19 @@ spec:
     command:
     - cat
     tty: true
+  - name: ansible
+    image: quay.io/ansible/creator-ee:v0.14.0
+    command:
+    - cat
+    tty: true
+    env:
+    - name: HOME
+      value: /tmp
 '''
         }
     }
 
     environment {
-        // Application and OpenShift configuration
         APP_NAME         = 'openshift-demo'
         APP_NAMESPACE    = 'denis-ung-20-dev'
     }
@@ -35,54 +42,25 @@ spec:
                 echo '=== Stage: Maven Build & Test ==='
                 sh 'mvn clean package'
             }
-            post {
-                always {
-                    // Archive test results if surefire reports are generated
-                    junit testResults: '**/target/surefire-reports/*.xml', allowEmptyResults: true
+        }
+
+        stage('Deploy to OpenShift (via Ansible)') {
+            steps {
+                // Switch to the Ansible container we spun up
+                container('ansible') {
+                    echo '=== Stage: Deploy to OpenShift with Ansible ==='
+                    sh '''
+                        # 1. Download OpenShift CLI (oc) inside the Ansible container
+                        curl -sL https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz | tar -xz
+                        mv oc /tmp/oc
+                        chmod +x /tmp/oc
+                        export PATH=$PATH:/tmp
+
+                        # 2. Run the Ansible Playbook
+                        ansible-playbook ansible/deploy-playbook.yml
+                    '''
                 }
             }
-        }
-
-        stage('Deploy to OpenShift') {
-            steps {
-                echo '=== Stage: Deploy to OpenShift ==='
-                sh '''
-                    # Switch to project (ServiceAccount already has permissions)
-                    echo "Ensuring project ${APP_NAMESPACE} exists..."
-                    oc project ${APP_NAMESPACE}
-
-                    # Apply Kubernetes/OpenShift resources
-                    echo "Applying manifests..."
-                    oc apply -f k8s/
-
-                    # Trigger build using local directory and follow streaming logs
-                    echo "Starting OpenShift Image Build from current workspace..."
-                    oc start-build openshift-demo --from-dir=. --follow
-
-                    # Wait for deployment to rollout
-                    echo "Waiting for deployment..."
-                    oc rollout status deployment/openshift-demo
-
-                    # Print current route URL
-                    echo "OpenShift deployment completed. External route:"
-                    oc get route openshift-demo
-                '''
-            }
-        }
-    }
-
-    post {
-        success {
-            echo '====================================================='
-            echo ' Pipeline Execution Succeeded!'
-            echo " openshift-demo successfully deployed to OpenShift.  "
-            echo '====================================================='
-        }
-        failure {
-            echo '====================================================='
-            echo ' Pipeline Execution Failed!'
-            echo ' Please check the console output above for error logs.'
-            echo '====================================================='
         }
     }
 }
