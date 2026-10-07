@@ -28,7 +28,7 @@ spec:
       containers:
       - name: openshift-demo
         image: openshift-demo:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         ports:
         - name: http
           containerPort: 8080

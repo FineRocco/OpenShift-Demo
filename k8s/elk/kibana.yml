@@ -42,6 +42,9 @@ kind: Route
 metadata:
   name: kibana
 spec:
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
   to:
     kind: Service
     name: kibana
