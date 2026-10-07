@@ -36,7 +36,7 @@
     # Task 2: Apply Kubernetes & OpenShift Manifests
     # --------------------------------------------------------------------------
     - name: 2. Apply Kubernetes manifests using oc apply -f k8s/
-      ansible.builtin.command: oc apply -f {{ k8s_dir }}/ -n {{ openshift_project }}
+      ansible.builtin.command: oc apply -f {{ k8s_dir }}/ --recursive -n {{ openshift_project }}
       register: oc_apply
       changed_when: "'created' in oc_apply.stdout or 'configured' in oc_apply.stdout"
 
