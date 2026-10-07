@@ -71,4 +71,3 @@ spec:
       - name: config-volume
         configMap:
           name: openshift-demo-config
-          
